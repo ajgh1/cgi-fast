@@ -86,6 +86,8 @@ current request.
 
 # INSTALLING FASTCGI SCRIPTS
 
+## Apache Http Server 1.3 With mod\_fastcgi
+
 See the FastCGI developer's kit documentation for full details.  On
 the Apache server, the following line must be added to srm.conf:
 
@@ -98,6 +100,36 @@ install, you must add something like the following to srm.conf:
 
 This instructs Apache to launch two copies of file\_upload.fcgi at
 startup time.
+
+## Apache HTTP Server 2.x With mod\_fastcgi
+
+Apache HTTPD 2.x does not use a separate `srm.conf` file by 
+default; all configuration directives should be placed in `httpd.conf`
+or into individual .conf files included in the configuration using
+`Include` or `IncludeOptional` directives.  Otherwise, the
+configuration using `mod_fastcgi` is the same.
+
+## Apache HTTP Server 2.4
+
+Apache HTTPD 2.4 contains several upgrades from earlier Apache
+versions, including a new way to serve FastCGI applications:  
+`mod_proxy_fcgi`.  This new module separates the FastCGI
+application's process management completely from the web server
+itself.  The web server and the application communicate over 
+either a Unix socket or a TCP port using the FastCGI protocol.
+
+### mod\_fcgid
+
+The `mod_fcgid` module is a more modern version of the older
+`mod_fastcgi` module, rewritten and maintained by the Apache HTTP
+Server project itself.  Unlike the older module, `mod_fcgid` manages
+FastCGI processes dynamically; rather than specify the number of 
+application processes to run, with `mod_fcgid` you can specify a
+process minimum and maximum (or accept the module defaults), and
+`mod_fcgid` will start/stop FastCGI processes to match the incoming
+request load.
+
+### mod\_proxy\_fcgi
 
 # USING FASTCGI SCRIPTS AS CGI SCRIPTS
 
