@@ -84,9 +84,7 @@ this way:
 Calls to header(), start\_form(), etc. will all operate on the
 current request.
 
-# INSTALLING FASTCGI SCRIPTS
-
-## Apache Http Server 1.3 With mod\_fastcgi
+# INSTALLING FASTCGI SCRIPTS (mod_fastcgi)
 
 See the FastCGI developer's kit documentation for full details.  On
 the Apache server, the following line must be added to srm.conf:
@@ -101,43 +99,13 @@ install, you must add something like the following to srm.conf:
 This instructs Apache to launch two copies of file\_upload.fcgi at
 startup time.
 
-## Apache HTTP Server 2.x With mod\_fastcgi
-
-Apache HTTPD 2.x does not use a separate `srm.conf` file by 
-default; all configuration directives should be placed in `httpd.conf`
-or into individual .conf files included in the configuration using
-`Include` or `IncludeOptional` directives.  Otherwise, the
-configuration using `mod_fastcgi` is the same.
-
-## Apache HTTP Server 2.4
-
-Apache HTTPD 2.4 contains several upgrades from earlier Apache
-versions, including a new way to serve FastCGI applications:  
-`mod_proxy_fcgi`.  This new module separates the FastCGI
-application's process management completely from the web server
-itself.  The web server and the application communicate over 
-either a Unix socket or a TCP port using the FastCGI protocol.
-
-### mod\_fcgid
-
-The `mod_fcgid` module is a more modern version of the older
-`mod_fastcgi` module, rewritten and maintained by the Apache HTTP
-Server project itself.  Unlike the older module, `mod_fcgid` manages
-FastCGI processes dynamically; rather than specify the number of 
-application processes to run, with `mod_fcgid` you can specify a
-process minimum and maximum (or accept the module defaults), and
-`mod_fcgid` will start/stop FastCGI processes to match the incoming
-request load.
-
-### mod\_proxy\_fcgi
-
-# USING FASTCGI SCRIPTS AS CGI SCRIPTS
+## Using FastCGI Scripts as CGI Scripts
 
 Any script that works correctly as a FastCGI script will also work
 correctly when installed as a vanilla CGI script.  However it will
 not see any performance benefit.
 
-# EXTERNAL FASTCGI SERVER INVOCATION
+## External FastCGI Server Invocation
 
 FastCGI supports a TCP/IP transport mechanism which allows FastCGI scripts to run
 external to the webserver, perhaps on a remote machine.  To configure the
@@ -201,6 +169,110 @@ prevent any CGI import pragmas being overwritten by CGI::Fast. You can
 use CGI::Fast as a drop in replacement like so:
 
     use CGI::Fast qw/ :standard /
+
+If you are using Apache HTTP Server 2.0 or 2.2 with mod_\fastcgi,
+place the above directives in httpd.conf, as Apache 2.x does not
+use an srm.conf file by default.
+
+# INSTALLING FASTCGI SCRIPTS (Apache 2.4)
+
+## Apache HTTP Server 2.4
+
+Apache HTTP Server 2.4 contains several upgrades from earlier Apache
+versions.  Instead of the old mod_fastcgi, FastCGI functions are 
+divided into two modules:  mod_proxy_fcgi and mod_fcgid.
+
+The mod_proxy_fcgi module separates the FastCGI
+application's process management completely from the web server
+itself.  The web server and the application communicate over 
+either a Unix socket or a TCP port using the FastCGI protocol.  This
+is similar to mod_fastcgi's FastCgiExternalServer functionality
+referenced above.
+
+Further FastCGI functionality is also provided by the Apache HTTP
+Server project via the mod_fcgid module.  Unlike the older mod_fastcgi
+module, mod_fcgid manages FastCGI processes dynamically; rather than
+specify the number of application processes to run, with mod_fcgid you
+can specify process minimum and maximums, and mod_fcgid will
+start/stop FastCGI processes as necessary to match the incoming request
+load.
+
+For more information, check out the mod_fcgid subproject:
+
+[https://httpd.apache.org/mod_fcgid/](https://httpd.apache.org/mod_fcgid/)
+
+## Using mod_fcgid
+
+To use mod_fcgid in your Apache installation, first make sure the
+module is loaded in your httpd.conf (or equivalent conf file);
+
+```
+LoadModule fcgid_module <module location>/mod_fcgid.so 
+```
+
+To configure Apache to serve a FastCGI script using mod_fcgid,
+you will need to add an Alias or ScriptAlias directive to 
+map your script to an URL, and then use a \<Directory\> or \<Location\>
+section to configure the location's options, 
+authentication/authorization/access
+control, etc.
+
+```
+Alias /file_upload /var/www/fcgi-bin/file_upload.fcgi 
+
+<Directory /var/www/fcgi-bin>
+    SetHandler fcgid-script
+    Options +ExecCGI
+    Require all granted
+</Directory>
+```
+
+This will make the /var/www/fcgi-bin/file\_upload.fcgi script
+available at the /file\_upload location, hiding the script's 
+location in the file system and what protocol or module Apache may
+be using to serve it.
+
+If you want a more traditional /fcgi-bin/ location to simply drop
+FastCGI scripts into, you can simply alias the directory itself:
+
+```
+Alias /fcgi-bin /var/www/fcgi-bin 
+
+<Directory /var/www/fcgi-bin>
+    SetHandler fcgid-script
+    Options +ExecCGI
+    Require all granted
+</Directory>
+```
+
+With this configuration, you may simply drop FastCGI scripts into
+the /var/www/fcgi-bin/ directory, and they will become available
+at the /fcgi-bin/\<script name\> location.
+
+Remember to set your FastCGI scripts' permissions allow your web
+server user to read and execute them.  Otherwise, Apache will be
+unable to actually run the scripts when it receives requests for them.
+
+Keep in mind it is safer to avoid placing FastCGI scripts under your
+DocumentRoot path, as you can accidentally allow access via multiple
+URL paths, potentially allowing your code to be downloaded
+instead of run by the web server.  This could allow leaking of your
+program code and/or other sensitive information.  
+
+## Using mod_proxy_fcgi
+
+To use Apache to serve your FastCGI script via mod_proxy_fcgi, make
+sure to load both the mod_proxy and mod_proxy_fcgi modules in your
+httpd.conf or equivalent:
+
+```
+LoadModule proxy_module <module location>/mod_proxy.so
+LoadModule proxy_fcgi_module <module location>/mod_proxy.so 
+```
+
+### With Unix Socket
+
+### With TCP Port
 
 # FILE HANDLES
 
